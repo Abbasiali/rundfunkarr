@@ -22,6 +22,8 @@ services:
     container_name: mediathekarr
     environment:
       - TZ=Europe/Berlin
+      - PUID=1000                           # User ID (id -u)
+      - PGID=1000                           # Group ID (id -g)
       - DOWNLOAD_FOLDER_PATH=/downloads
       # Optional: Metadaten-APIs (mindestens eine empfohlen)
       # - TVDB_API_KEY=your-tvdb-api-key    # kostenpflichtig
@@ -71,6 +73,8 @@ npm start
 
 | Variable | Beschreibung | Standard |
 |----------|--------------|----------|
+| `PUID` | User ID für Dateiberechtigungen | `1001` |
+| `PGID` | Group ID für Dateiberechtigungen | `1001` |
 | `TVDB_API_KEY` | TVDB API Key (kostenpflichtig) | - |
 | `TMDB_API_KEY` | TMDB API Key (kostenlos) | - |
 | `DOWNLOAD_FOLDER_PATH` | Pfad für Downloads im Container | `/downloads` |

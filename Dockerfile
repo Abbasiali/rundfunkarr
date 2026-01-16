@@ -41,11 +41,13 @@ RUN mkdir -p /app/standalone-out && \
 FROM node:22-alpine AS runner
 WORKDIR /app
 
-# Install runtime dependencies for FFmpeg extraction
+# Install runtime dependencies for FFmpeg extraction and user management
 RUN apk add --no-cache \
     tar \
     xz \
     wget \
+    su-exec \
+    shadow \
     && rm -rf /var/cache/apk/*
 
 ENV NODE_ENV=production
@@ -71,7 +73,9 @@ COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 RUN mkdir -p /app/prisma/data /app/downloads /app/ffmpeg \
     && chown -R nextjs:nodejs /app
 
-USER nextjs
+# Copy entrypoint script
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 # Expose port
 EXPOSE 6767
@@ -85,5 +89,6 @@ ENV DATABASE_URL="file:./prisma/data/mediathekarr.db"
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
     CMD wget -q --spider http://localhost:6767/api/download?mode=version || exit 1
 
-# Start the application
+# Start the application with entrypoint for PUID/PGID support
+ENTRYPOINT ["/entrypoint.sh"]
 CMD ["node", "server.js"]
