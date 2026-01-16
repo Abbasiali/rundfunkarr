@@ -131,12 +131,13 @@ export default function Home() {
   };
 
   const handleDownload = async (result: SearchResult) => {
-    // Create a fake NZB content with the URL
+    // Create NZB content with URL - format must match parseNzbContent regex
+    const fileName = `${result.topic} - ${result.title}`.replace(/[<>:"/\\|?*]/g, "_");
     const nzbContent = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE nzb PUBLIC "-//newzBin//DTD NZB 1.1//EN" "http://www.newzbin.com/DTD/nzb/nzb-1.1.dtd">
 <nzb xmlns="http://www.newzbin.com/DTD/2003/nzb">
   <head>
-    <meta type="filename">${result.topic} - ${result.title}.nzb</meta>
+    <meta type="filename" filename="${fileName}.nzb"/>
   </head>
   <!-- ${result.url_video_hd || result.url_video} -->
 </nzb>`;
