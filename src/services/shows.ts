@@ -1,0 +1,116 @@
+import { promises as fs } from "fs";
+import path from "path";
+import { tvdbCache } from "@/lib/cache";
+import type { TvdbData } from "@/types";
+import { getShowInfoByTvdbId as getTvdbShow } from "./tvdb";
+import { getShowInfoByTvdbId as getTmdbShow } from "./tmdb";
+
+// Local shows data
+interface LocalShow {
+  tvdbId: number;
+  name: string;
+  germanName: string;
+  aliases: string[];
+  episodes: Array<{
+    name: string;
+    seasonNumber: number;
+    episodeNumber: number;
+    aired: string | null;
+    runtime?: number | null;
+  }>;
+}
+
+let localShows: Map<number, LocalShow> = new Map();
+let localShowsLoaded = false;
+
+async function loadLocalShows(): Promise<void> {
+  if (localShowsLoaded) return;
+
+  try {
+    const showsPath = path.join(process.cwd(), "data", "shows.json");
+    const fileContent = await fs.readFile(showsPath, "utf-8");
+    const shows: LocalShow[] = JSON.parse(fileContent);
+
+    localShows = new Map();
+    for (const show of shows) {
+      localShows.set(show.tvdbId, show);
+    }
+
+    console.log(`[Shows] Loaded ${localShows.size} local shows from file`);
+    localShowsLoaded = true;
+  } catch (error) {
+    console.error("[Shows] Error loading local shows:", error);
+  }
+}
+
+function getLocalShow(tvdbId: number): TvdbData | null {
+  const show = localShows.get(tvdbId);
+  if (!show) return null;
+
+  return {
+    id: show.tvdbId,
+    name: show.name,
+    germanName: show.germanName,
+    aliases: show.aliases.map((name) => ({ language: "deu", name })),
+    episodes: show.episodes.map((ep) => ({
+      name: ep.name,
+      seasonNumber: ep.seasonNumber,
+      episodeNumber: ep.episodeNumber,
+      aired: ep.aired ? new Date(ep.aired) : null,
+      runtime: ep.runtime || null,
+    })),
+  };
+}
+
+/**
+ * Get show info by TVDB ID from multiple sources:
+ * 1. Local shows.json (always checked first)
+ * 2. TVDB API (if TVDB_API_KEY is configured)
+ * 3. TMDB API (if TMDB_API_KEY is configured)
+ */
+export async function getShowInfoByTvdbId(tvdbId: number): Promise<TvdbData | null> {
+  if (tvdbId === undefined || tvdbId === null) {
+    return null;
+  }
+
+  // Check memory cache first
+  const cacheKey = `show_${tvdbId}`;
+  const cached = tvdbCache.get(cacheKey) as TvdbData | undefined;
+  if (cached) {
+    return cached;
+  }
+
+  // 1. Check local shows file first (no API needed)
+  await loadLocalShows();
+  const localShow = getLocalShow(tvdbId);
+  if (localShow) {
+    console.log(`[Shows] Found "${localShow.name}" in local database`);
+    tvdbCache.set(cacheKey, localShow);
+    return localShow;
+  }
+
+  // 2. Try TVDB if API key is configured
+  if (process.env.TVDB_API_KEY) {
+    console.log(`[Shows] Trying TVDB for ID ${tvdbId}`);
+    const tvdbResult = await getTvdbShow(tvdbId);
+    if (tvdbResult) {
+      console.log(`[Shows] Found "${tvdbResult.name}" via TVDB`);
+      tvdbCache.set(cacheKey, tvdbResult);
+      return tvdbResult;
+    }
+  }
+
+  // 3. Try TMDB if API key is configured
+  if (process.env.TMDB_API_KEY) {
+    console.log(`[Shows] Trying TMDB for ID ${tvdbId}`);
+    const tmdbResult = await getTmdbShow(tvdbId);
+    if (tmdbResult) {
+      console.log(`[Shows] Found "${tmdbResult.name}" via TMDB`);
+      tvdbCache.set(cacheKey, tmdbResult);
+      return tmdbResult;
+    }
+  }
+
+  console.log(`[Shows] No show found for TVDB ID ${tvdbId} in any source`);
+  return null;
+}

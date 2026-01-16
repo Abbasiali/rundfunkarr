@@ -1,5 +1,5 @@
 import { mediathekCache } from "@/lib/cache";
-import { getShowInfoByTvdbId } from "./tmdb";
+import { getShowInfoByTvdbId } from "./shows";
 import { ensureRulesetsLoaded, getRulesetsForTopic, getRulesetsForTopicAndTvdbId, getAllTopics } from "./rulesets";
 import { generateRssItems, convertItemsToRss, serializeRss, getEmptyRssResult } from "./newznab";
 import type {

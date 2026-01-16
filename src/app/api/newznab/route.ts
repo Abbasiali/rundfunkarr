@@ -4,7 +4,7 @@ import {
   fetchSearchResultsByString,
   fetchSearchResultsForRssSync,
 } from "@/services/mediathek";
-import { getShowInfoByTvdbId } from "@/services/tmdb";
+import { getShowInfoByTvdbId } from "@/services/shows";
 import { serializeRss, getEmptyRssResult } from "@/services/newznab";
 
 export async function GET(request: NextRequest) {
