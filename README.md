@@ -30,7 +30,7 @@ services:
       - ./data:/app/prisma/data
       - ./downloads:/app/downloads
     ports:
-      - "127.0.0.1:3000:3000"
+      - "127.0.0.1:6767:6767"
     restart: unless-stopped
 ```
 
@@ -112,14 +112,14 @@ Für Shows die nicht in TVDB/TMDB sind, können Einträge in `data/shows.json` h
 ### Als Indexer (in Prowlarr oder direkt)
 
 1. Indexer hinzufügen → Generic Newznab
-2. URL: `http://mediathekarr:3000/api/newznab`
+2. URL: `http://mediathekarr:6767/api/newznab`
 3. API Key: beliebig (wird nicht validiert)
 
 ### Als Download Client
 
 1. Download Client hinzufügen → SABnzbd
 2. Host: `mediathekarr`
-3. Port: `3000`
+3. Port: `6767`
 4. API Key: beliebig
 
 ## Rulesets & Shows hinzufügen

@@ -74,16 +74,16 @@ RUN mkdir -p /app/prisma/data /app/downloads /app/ffmpeg \
 USER nextjs
 
 # Expose port
-EXPOSE 3000
+EXPOSE 6767
 
 # Environment variables
-ENV PORT=3000
+ENV PORT=6767
 ENV HOSTNAME="0.0.0.0"
 ENV DATABASE_URL="file:./prisma/data/mediathekarr.db"
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
-    CMD wget -q --spider http://localhost:3000/api/download?mode=version || exit 1
+    CMD wget -q --spider http://localhost:6767/api/download?mode=version || exit 1
 
 # Start the application
 CMD ["node", "server.js"]
