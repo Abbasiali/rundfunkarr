@@ -28,8 +28,14 @@ fi
 
 echo "Running as user: $USER_NAME ($(id $USER_NAME))"
 
+# Ensure required directories exist with correct permissions
+DOWNLOAD_DIR="${DOWNLOAD_FOLDER_PATH:-/app/downloads}"
+echo "Ensuring required directories exist..."
+mkdir -p /app/prisma/data "$DOWNLOAD_DIR"
+echo "Directories created/verified: /app/prisma/data, $DOWNLOAD_DIR"
+
 # Fix ownership of app directories
-chown -R "$PUID:$PGID" /app/prisma/data /app/downloads /app/ffmpeg 2>/dev/null || true
+chown -R "$PUID:$PGID" /app/prisma/data "$DOWNLOAD_DIR" /app/ffmpeg 2>/dev/null || true
 chmod -R 755 /app/prisma/data 2>/dev/null || true
 
 # Run database migrations
