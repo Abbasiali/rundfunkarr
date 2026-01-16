@@ -34,16 +34,20 @@ model TvdbEpisode {
 }
 
 model Download {
-  id          String    @id @default(uuid())
-  title       String
-  url         String
-  category    String
-  status      String    @default("queued")
-  progress    Int       @default(0)
-  filePath    String?
-  error       String?
-  createdAt   DateTime  @default(now())
-  completedAt DateTime?
+  id              String    @id @default(uuid())
+  title           String
+  url             String
+  category        String
+  status          String    @default("queued")
+  progress        Int       @default(0)
+  size            Int       @default(0)
+  totalSize       Int       @default(0)
+  downloadedBytes Int       @default(0)
+  speed           Int       @default(0)
+  filePath        String?
+  error           String?
+  createdAt       DateTime  @default(now())
+  completedAt     DateTime?
 }
 
 model Config {

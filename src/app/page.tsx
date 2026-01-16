@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import packageJson from "../../package.json";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,6 +39,7 @@ interface QueueSlot {
   cat: string;
   mb: string;
   mbleft: string;
+  speed: string;
 }
 
 interface HistorySlot {
@@ -205,7 +207,7 @@ export default function Home() {
       <div className="flex items-center justify-between mb-8">
         <h1 className="text-3xl font-bold">MediathekArr</h1>
         <Badge variant="outline" className="text-xs">
-          v4.3.3
+          v{packageJson.version}
         </Badge>
       </div>
 
@@ -269,7 +271,7 @@ export default function Home() {
           <div className="flex items-center justify-between">
             <CardTitle>Downloads</CardTitle>
             <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">
+              <span className="text-xs text-muted-foreground" suppressHydrationWarning>
                 Aktualisiert: {lastRefresh.toLocaleTimeString("de-DE")}
               </span>
               <Button variant="outline" size="sm" onClick={fetchQueue}>
@@ -304,6 +306,7 @@ export default function Home() {
                       <TableHead>Status</TableHead>
                       <TableHead>Fortschritt</TableHead>
                       <TableHead>Größe</TableHead>
+                      <TableHead>Geschw.</TableHead>
                       <TableHead>Verbleibend</TableHead>
                       <TableHead className="w-24">Aktionen</TableHead>
                     </TableRow>
@@ -317,6 +320,7 @@ export default function Home() {
                         <TableCell>{getStatusBadge(item.status)}</TableCell>
                         <TableCell>{item.percentage}%</TableCell>
                         <TableCell>{item.mb} MB</TableCell>
+                        <TableCell>{item.speed}</TableCell>
                         <TableCell>{item.timeleft}</TableCell>
                         <TableCell>
                           <Button

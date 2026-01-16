@@ -111,10 +111,15 @@ async function processDownload(downloadId: string): Promise<void> {
     const mp4Path = path.join(categoryDir, `${download.title}${fileExtension}`);
 
     // Download the file
-    const downloadSuccess = await downloadFile(download.url, mp4Path, async (progress) => {
+    const downloadSuccess = await downloadFile(download.url, mp4Path, async (progress, downloadedBytes, totalBytes, speed) => {
       await prisma.download.update({
         where: { id: downloadId },
-        data: { progress },
+        data: {
+          progress,
+          downloadedBytes,
+          totalSize: totalBytes,
+          speed,
+        },
       });
     });
 
@@ -160,6 +165,7 @@ async function processDownload(downloadId: string): Promise<void> {
         data: {
           status: "completed",
           progress: 100,
+          size: stats.size,
           filePath: storagePath,
           completedAt: new Date(),
         },
@@ -177,6 +183,7 @@ async function processDownload(downloadId: string): Promise<void> {
         data: {
           status: "completed",
           progress: 100,
+          size: stats.size,
           filePath: mp4Path,
           completedAt: new Date(),
         },
@@ -215,7 +222,7 @@ async function markAsFailed(downloadId: string, error: string): Promise<void> {
 async function downloadFile(
   url: string,
   destPath: string,
-  onProgress?: (percent: number) => Promise<void>
+  onProgress?: (percent: number, downloadedBytes: number, totalBytes: number, speed: number) => Promise<void>
 ): Promise<boolean> {
   try {
     const response = await fetch(url);
@@ -231,6 +238,9 @@ async function downloadFile(
     const reader = response.body.getReader();
     let downloadedBytes = 0;
     let lastProgressUpdate = 0;
+    let lastSpeedCheck = Date.now();
+    let lastSpeedBytes = 0;
+    let currentSpeed = 0;
 
     while (true) {
       const { done, value } = await reader.read();
@@ -242,12 +252,22 @@ async function downloadFile(
       fileStream.write(Buffer.from(value));
       downloadedBytes += value.length;
 
+      // Calculate speed every second
+      const now = Date.now();
+      const timeDiff = now - lastSpeedCheck;
+      if (timeDiff >= 1000) {
+        const bytesDiff = downloadedBytes - lastSpeedBytes;
+        currentSpeed = Math.round(bytesDiff / (timeDiff / 1000));
+        lastSpeedCheck = now;
+        lastSpeedBytes = downloadedBytes;
+      }
+
       // Update progress (throttled to every 1%)
       if (contentLength > 0 && onProgress) {
         const percent = Math.floor((downloadedBytes / contentLength) * 100);
         if (percent > lastProgressUpdate) {
           lastProgressUpdate = percent;
-          await onProgress(percent);
+          await onProgress(percent, downloadedBytes, contentLength, currentSpeed);
         }
       }
     }

@@ -10,6 +10,7 @@ export interface QueueItem {
   cat: string;
   mb: string;
   mbleft: string;
+  speed: string;
 }
 
 export interface HistoryItem {
@@ -97,15 +98,36 @@ export async function getQueue(): Promise<SabnzbdQueue> {
     if (d.status === "downloading") statusText = "Downloading";
     else if (d.status === "converting") statusText = "Extracting";
 
+    const totalMb = (d.totalSize / 1024 / 1024).toFixed(1);
+    const remainingBytes = d.totalSize - d.downloadedBytes;
+    const speedMbps = (d.speed / 1024 / 1024).toFixed(1);
+
+    // Calculate time left
+    let timeleft = "";
+    if (d.status === "downloading" && d.speed > 0) {
+      const secondsLeft = Math.round(remainingBytes / d.speed);
+      const hours = Math.floor(secondsLeft / 3600);
+      const minutes = Math.floor((secondsLeft % 3600) / 60);
+      const seconds = secondsLeft % 60;
+      if (hours > 0) {
+        timeleft = `${hours}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+      } else {
+        timeleft = `${minutes}:${seconds.toString().padStart(2, "0")}`;
+      }
+    } else if (d.status === "converting") {
+      timeleft = "Konvertiere...";
+    }
+
     return {
       nzo_id: d.id,
       filename: d.title,
       status: statusText,
       percentage: d.progress.toString(),
-      timeleft: d.status === "queued" ? "" : "Unknown",
+      timeleft,
       cat: d.category,
-      mb: "0",
-      mbleft: "0",
+      mb: totalMb,
+      mbleft: (remainingBytes / 1024 / 1024).toFixed(1),
+      speed: d.status === "downloading" ? `${speedMbps} MB/s` : "",
     };
   });
 
@@ -127,7 +149,7 @@ export async function getHistory(): Promise<SabnzbdHistory> {
     completed: d.completedAt ? Math.floor(d.completedAt.getTime() / 1000) : 0,
     category: d.category,
     storage: d.filePath || "",
-    bytes: 0,
+    bytes: d.size,
     fail_message: d.error || "",
   }));
 
