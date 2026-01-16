@@ -84,6 +84,11 @@ async function refreshToken(): Promise<string | null> {
 }
 
 export async function getShowInfoByTvdbId(tvdbId: number): Promise<TvdbData | null> {
+  // Guard against undefined/null tvdbId
+  if (tvdbId === undefined || tvdbId === null) {
+    return null;
+  }
+
   // Check memory cache first
   const cacheKey = `tvdb_${tvdbId}`;
   const cached = tvdbCache.get(cacheKey) as TvdbData | undefined;

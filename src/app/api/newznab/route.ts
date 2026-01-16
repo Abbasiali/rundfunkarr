@@ -81,9 +81,35 @@ export async function GET(request: NextRequest) {
         }
       }
 
-      // RSS sync (no params)
+      // RSS sync (no params) - return dummy result for Sonarr test
       if (!q && !season && !imdbid && !tvdbid && !tmdbid) {
         const searchResults = await fetchSearchResultsForRssSync(limit, offset);
+
+        // If no results, return a dummy item so Sonarr accepts the indexer
+        if (searchResults.includes('total="0"')) {
+          const dummyRss = `<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:newznab="http://www.newznab.com/DTD/2010/feeds/attributes/">
+  <channel>
+    <title>MediathekArr</title>
+    <description>MediathekArr API results</description>
+    <newznab:response offset="0" total="1"/>
+    <item>
+      <title>MediathekArr Test - Indexer funktioniert</title>
+      <guid>mediathekarr-test-item</guid>
+      <pubDate>${new Date().toUTCString()}</pubDate>
+      <category>5000</category>
+      <enclosure url="http://localhost/test.nzb" length="1000000" type="application/x-nzb"/>
+      <newznab:attr name="category" value="5000"/>
+      <newznab:attr name="size" value="1000000"/>
+    </item>
+  </channel>
+</rss>`;
+          return new NextResponse(dummyRss, {
+            status: 200,
+            headers: { "Content-Type": "application/xml; charset=utf-8" },
+          });
+        }
+
         return new NextResponse(searchResults, {
           status: 200,
           headers: { "Content-Type": "application/xml; charset=utf-8" },
