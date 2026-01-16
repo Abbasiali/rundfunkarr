@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { v4 as uuidv4 } from "uuid";
+import * as path from "path";
 
 export interface QueueItem {
   nzo_id: string;
@@ -142,16 +143,25 @@ export async function getHistory(): Promise<SabnzbdHistory> {
     orderBy: { completedAt: "desc" },
   });
 
-  const slots: HistoryItem[] = downloads.map((d) => ({
-    nzo_id: d.id,
-    name: d.title,
-    status: d.status === "completed" ? "Completed" : "Failed",
-    completed: d.completedAt ? Math.floor(d.completedAt.getTime() / 1000) : 0,
-    category: d.category,
-    storage: d.filePath || "",
-    bytes: d.size,
-    fail_message: d.error || "",
-  }));
+  const slots: HistoryItem[] = downloads.map((d) => {
+    // SABnzbd returns the folder path, not the file path
+    // Sonarr scans this folder for video files
+    let storagePath = "";
+    if (d.filePath) {
+      storagePath = path.dirname(d.filePath);
+    }
+
+    return {
+      nzo_id: d.id,
+      name: d.title,
+      status: d.status === "completed" ? "Completed" : "Failed",
+      completed: d.completedAt ? Math.floor(d.completedAt.getTime() / 1000) : 0,
+      category: d.category,
+      storage: storagePath,
+      bytes: d.size,
+      fail_message: d.error || "",
+    };
+  });
 
   return { slots };
 }
