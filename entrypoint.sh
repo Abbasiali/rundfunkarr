@@ -23,5 +23,9 @@ fi
 # Fix ownership of app directories
 chown -R "$PUID:$PGID" /app/prisma/data /app/downloads /app/ffmpeg 2>/dev/null || true
 
+# Run database migrations
+echo "Running database migrations..."
+su-exec "$USER_NAME" npx prisma migrate deploy 2>/dev/null || su-exec "$USER_NAME" npx prisma db push --skip-generate 2>/dev/null || true
+
 # Run as the user
 exec su-exec "$USER_NAME" "$@"
