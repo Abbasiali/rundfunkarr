@@ -22,22 +22,62 @@ interface LocalShow {
 
 let localShows: Map<number, LocalShow> = new Map();
 let localShowsLoaded = false;
+let lastShowsFetchTime: number = 0;
+const SHOWS_REFRESH_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
+
+// GitHub raw URL for auto-update
+const GITHUB_SHOWS_URL =
+  process.env.SHOWS_URL ||
+  "https://raw.githubusercontent.com/mediathekarr/mediathekarr/main/data/shows.json";
+
+async function fetchShowsFromGitHub(): Promise<LocalShow[] | null> {
+  try {
+    console.log(`[Shows] Fetching from GitHub: ${GITHUB_SHOWS_URL}`);
+    const response = await fetch(GITHUB_SHOWS_URL, {
+      headers: { "User-Agent": "MediathekArr" },
+    });
+
+    if (!response.ok) {
+      console.warn(`[Shows] GitHub fetch failed: ${response.status}`);
+      return null;
+    }
+
+    const shows: LocalShow[] = await response.json();
+    console.log(`[Shows] Fetched ${shows.length} shows from GitHub`);
+    return shows;
+  } catch (error) {
+    console.warn("[Shows] Error fetching from GitHub:", error);
+    return null;
+  }
+}
 
 async function loadLocalShows(): Promise<void> {
-  if (localShowsLoaded) return;
+  // Check if we need to refresh (hourly)
+  const now = Date.now();
+  if (localShowsLoaded && now - lastShowsFetchTime < SHOWS_REFRESH_INTERVAL_MS) {
+    return;
+  }
 
   try {
-    const showsPath = path.join(process.cwd(), "data", "shows.json");
-    const fileContent = await fs.readFile(showsPath, "utf-8");
-    const shows: LocalShow[] = JSON.parse(fileContent);
+    // Try GitHub first, fall back to local file
+    let shows = await fetchShowsFromGitHub();
+
+    if (!shows) {
+      console.log("[Shows] Falling back to local file");
+      const showsPath = path.join(process.cwd(), "data", "shows.json");
+      const fileContent = await fs.readFile(showsPath, "utf-8");
+      shows = JSON.parse(fileContent);
+      console.log(`[Shows] Loaded ${shows!.length} shows from local file`);
+    }
 
     localShows = new Map();
-    for (const show of shows) {
+    for (const show of shows!) {
       localShows.set(show.tvdbId, show);
     }
 
-    console.log(`[Shows] Loaded ${localShows.size} local shows from file`);
+    console.log(`[Shows] Indexed ${localShows.size} local shows`);
     localShowsLoaded = true;
+    lastShowsFetchTime = now;
   } catch (error) {
     console.error("[Shows] Error loading local shows:", error);
   }
