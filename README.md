@@ -7,8 +7,9 @@ Mediathek-Indexer für Sonarr/Radarr - Automatischer Download von ARD, ZDF und a
 - **Newznab-kompatibler Indexer** - Funktioniert mit Prowlarr, NZB Hydra, Sonarr und Radarr
 - **SABnzbd-kompatibler Downloader** - Direkter HTTP-Download von den Mediatheken
 - **Automatische MKV-Konvertierung** - FFmpeg-Integration mit deutschen Sprachmetadaten
-- **SQLite-Datenbank** - Persistente Speicherung von TVDB-Cache und Download-Historie
-- **Einheitlicher Tech-Stack** - Alles in TypeScript/Node.js
+- **Flexible Metadaten-Quellen** - Lokale Datenbank, TVDB oder TMDB
+- **Community-Rulesets** - Lokale Rulesets via Pull Request erweiterbar
+- **SQLite-Datenbank** - Persistente Speicherung von Cache und Download-Historie
 
 ## Installation mit Docker
 
@@ -21,13 +22,13 @@ services:
     container_name: mediathekarr
     environment:
       - TZ=Europe/Berlin
-      - TVDB_API_KEY=your-tvdb-api-key  # Erforderlich
       - DOWNLOAD_FOLDER_PATH=/downloads
-      - DOWNLOAD_FOLDER_PATH_MAPPING=/downloads/completed
+      # Optional: Metadaten-APIs (mindestens eine empfohlen)
+      # - TVDB_API_KEY=your-tvdb-api-key    # kostenpflichtig
+      # - TMDB_API_KEY=your-tmdb-api-key    # kostenlos
     volumes:
       - ./data:/app/prisma/data
       - ./downloads:/app/downloads
-      - ./ffmpeg:/app/ffmpeg
     ports:
       - "127.0.0.1:3000:3000"
     restart: unless-stopped
@@ -45,6 +46,7 @@ docker-compose up -d
 
 - Node.js >= 20
 - npm
+- FFmpeg (für MKV-Konvertierung)
 
 ### Setup
 
@@ -69,10 +71,20 @@ npm start
 
 | Variable | Beschreibung | Standard |
 |----------|--------------|----------|
-| `TVDB_API_KEY` | TVDB API Key (erforderlich für TV-Suche) | - |
+| `TVDB_API_KEY` | TVDB API Key (kostenpflichtig) | - |
+| `TMDB_API_KEY` | TMDB API Key (kostenlos) | - |
 | `DOWNLOAD_FOLDER_PATH` | Pfad für Downloads im Container | `/downloads` |
-| `DOWNLOAD_FOLDER_PATH_MAPPING` | Pfad-Mapping für Sonarr/Radarr | - |
 | `DATABASE_URL` | SQLite Datenbank-Pfad | `file:./prisma/data/mediathekarr.db` |
+
+### Metadaten-Quellen
+
+MediathekArr sucht Show-Informationen in folgender Reihenfolge:
+
+1. **Lokale Datenbank** (`data/shows.json`) - Kein API Key nötig
+2. **TVDB** - Wenn `TVDB_API_KEY` konfiguriert (kostenpflichtig)
+3. **TMDB** - Wenn `TMDB_API_KEY` konfiguriert (kostenlos)
+
+Für Shows die nicht in TVDB/TMDB sind, können Einträge in `data/shows.json` hinzugefügt werden.
 
 ## API Endpoints
 
@@ -89,11 +101,11 @@ npm start
 
 | Endpoint | Beschreibung |
 |----------|--------------|
-| `GET /api/download?mode=version` | Version (4.3.3) |
-| `GET /api/download?mode=get_config` | Konfiguration |
-| `GET /api/download?mode=queue` | Download-Queue |
-| `GET /api/download?mode=history` | Download-Historie |
-| `POST /api/download?mode=addfile&cat=sonarr` | Download hinzufügen |
+| `GET /api?mode=version` | Version |
+| `GET /api?mode=get_config` | Konfiguration |
+| `GET /api?mode=queue` | Download-Queue |
+| `GET /api?mode=history` | Download-Historie |
+| `POST /api?mode=addfile&cat=sonarr` | Download hinzufügen |
 
 ## Sonarr/Radarr Einrichtung
 
@@ -108,8 +120,49 @@ npm start
 1. Download Client hinzufügen → SABnzbd
 2. Host: `mediathekarr`
 3. Port: `3000`
-4. URL Base: `/api/download`
-5. API Key: beliebig
+4. API Key: beliebig
+
+## Rulesets & Shows hinzufügen
+
+### Neue Show hinzufügen
+
+1. Show in `data/shows.json` hinzufügen:
+```json
+{
+  "tvdbId": 123456,
+  "name": "Show Name",
+  "germanName": "Deutscher Name",
+  "aliases": [],
+  "episodes": [
+    { "name": "Episode 1", "seasonNumber": 1, "episodeNumber": 1, "aired": "2024-01-01" }
+  ]
+}
+```
+
+2. Ruleset in `data/rulesets.json` hinzufügen:
+```json
+{
+  "id": 1001,
+  "mediaId": 1001,
+  "topic": "Mediathek Topic Name",
+  "priority": 0,
+  "filters": "[{\"attribute\":\"duration\",\"type\":\"GreaterThan\",\"value\":\"30\"}]",
+  "titleRegexRules": "[]",
+  "episodeRegex": "(?<=E)(\\d{2})(?=\\))",
+  "seasonRegex": "(?<=S)(\\d{2})(?=/E)",
+  "matchingStrategy": "SeasonAndEpisodeNumber",
+  "media": {
+    "media_id": 1001,
+    "media_name": "Show Name",
+    "media_type": "show",
+    "media_tvdbId": 123456,
+    "media_tmdbId": null,
+    "media_imdbId": null
+  }
+}
+```
+
+3. Pull Request erstellen
 
 ## Entwicklung
 
@@ -133,10 +186,12 @@ npm run db:migrate
 src/
 ├── app/api/           # Next.js API Routes
 │   ├── newznab/       # Indexer API
-│   └── download/      # Downloader API
+│   └── route.ts       # Downloader API (SABnzbd)
 ├── services/          # Business Logic
 │   ├── mediathek.ts   # MediathekView API
-│   ├── tvdb.ts        # TVDB API + Caching
+│   ├── shows.ts       # Unified Show Lookup
+│   ├── tvdb.ts        # TVDB API
+│   ├── tmdb.ts        # TMDB API
 │   ├── newznab.ts     # RSS/XML Generation
 │   └── rulesets.ts    # Matching Rules
 ├── server/            # Server-Side Only
@@ -145,12 +200,16 @@ src/
 └── lib/               # Utilities
     ├── db.ts          # Prisma Client
     └── cache.ts       # LRU Caches
+data/
+├── shows.json         # Lokale Show-Datenbank
+└── rulesets.json      # Matching Rulesets
 ```
 
 ## Credits
 
 - [MediathekViewWeb](https://github.com/mediathekview/mediathekviewweb) - Mediathek API
 - [TheTVDB](https://thetvdb.com) - Metadaten API
+- [TMDB](https://www.themoviedb.org) - Metadaten API
 
 ## Lizenz
 
