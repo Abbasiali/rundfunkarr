@@ -1,9 +1,15 @@
 import { promises as fs } from "fs";
 import path from "path";
-import type { Ruleset } from "@/types";
+import type { Ruleset, TvdbData } from "@/types";
+import {
+  getGeneratedRulesets,
+  generateRulesetForShow,
+  getGeneratedRulesetByTvdbId,
+} from "./ruleset-generator";
 
 // In-memory storage for rulesets indexed by topic
 let rulesetsByTopic: Map<string, Ruleset[]> = new Map();
+let generatedRulesetsByTopic: Map<string, Ruleset[]> = new Map();
 let lastFetchTime: number = 0;
 const REFRESH_INTERVAL_MS = 60 * 60 * 1000; // 1 hour
 
@@ -76,9 +82,34 @@ export async function loadRulesets(): Promise<void> {
     }
 
     indexRulesets(allRulesets);
+
+    // Also load generated rulesets from database
+    await loadGeneratedRulesets();
+
     lastFetchTime = Date.now();
   } catch (error) {
     console.error("[Rulesets] Error loading rulesets:", error);
+  }
+}
+
+async function loadGeneratedRulesets(): Promise<void> {
+  try {
+    const generated = await getGeneratedRulesets();
+    generatedRulesetsByTopic = new Map();
+
+    for (const ruleset of generated) {
+      const existing = generatedRulesetsByTopic.get(ruleset.topic) || [];
+      existing.push(ruleset);
+      generatedRulesetsByTopic.set(ruleset.topic, existing);
+    }
+
+    if (generated.length > 0) {
+      console.log(
+        `[Rulesets] Loaded ${generated.length} generated rulesets for ${generatedRulesetsByTopic.size} topics`
+      );
+    }
+  } catch (error) {
+    console.warn("[Rulesets] Error loading generated rulesets:", error);
   }
 }
 
@@ -91,8 +122,12 @@ export async function refreshRulesetsIfNeeded(): Promise<void> {
 }
 
 export function getRulesetsForTopic(topic: string): Ruleset[] {
-  const rulesets = rulesetsByTopic.get(topic) || [];
-  return rulesets;
+  // Check generated rulesets first (higher priority for user-specific matches)
+  const generated = generatedRulesetsByTopic.get(topic) || [];
+  const external = rulesetsByTopic.get(topic) || [];
+
+  // Generated rulesets take priority, then external
+  return [...generated, ...external];
 }
 
 export function getRulesetsForTopicAndTvdbId(topic: string, tvdbId: number): Ruleset[] {
@@ -102,7 +137,76 @@ export function getRulesetsForTopicAndTvdbId(topic: string, tvdbId: number): Rul
 }
 
 export function getAllTopics(): string[] {
-  return Array.from(rulesetsByTopic.keys());
+  // Combine topics from both sources
+  const externalTopics = Array.from(rulesetsByTopic.keys());
+  const generatedTopics = Array.from(generatedRulesetsByTopic.keys());
+  return [...new Set([...externalTopics, ...generatedTopics])];
+}
+
+/**
+ * Check if we have a ruleset for a TVDB ID (from any source)
+ */
+export function hasRulesetForTvdbId(tvdbId: number): boolean {
+  // Check generated rulesets
+  for (const rulesets of generatedRulesetsByTopic.values()) {
+    if (rulesets.some((r) => r.media?.media_tvdbId === tvdbId)) {
+      return true;
+    }
+  }
+
+  // Check external rulesets
+  for (const rulesets of rulesetsByTopic.values()) {
+    if (rulesets.some((r) => r.media?.media_tvdbId === tvdbId)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Add a generated ruleset to the in-memory cache
+ */
+export function addGeneratedRuleset(ruleset: Ruleset): void {
+  const existing = generatedRulesetsByTopic.get(ruleset.topic) || [];
+  existing.push(ruleset);
+  generatedRulesetsByTopic.set(ruleset.topic, existing);
+  console.log(`[Rulesets] Added generated ruleset for topic "${ruleset.topic}"`);
+}
+
+/**
+ * Get or generate a ruleset for a show
+ * This is the main entry point for auto-generating rulesets
+ */
+export async function getOrGenerateRulesetForShow(
+  tvdbId: number,
+  showInfo: TvdbData
+): Promise<Ruleset | null> {
+  // First check if we already have a ruleset (external or generated)
+  if (hasRulesetForTvdbId(tvdbId)) {
+    console.log(`[Rulesets] Already have ruleset for TVDB ${tvdbId}`);
+    return null; // Return null to indicate existing ruleset should be used
+  }
+
+  // Check if we have a generated ruleset in database
+  const existingGenerated = await getGeneratedRulesetByTvdbId(tvdbId);
+  if (existingGenerated) {
+    // Add to cache if not already there
+    addGeneratedRuleset(existingGenerated);
+    return existingGenerated;
+  }
+
+  // Try to auto-generate a new ruleset
+  console.log(`[Rulesets] No ruleset found for TVDB ${tvdbId}, attempting auto-generation...`);
+  const generated = await generateRulesetForShow(tvdbId, showInfo);
+
+  if (generated) {
+    // Add to in-memory cache
+    addGeneratedRuleset(generated);
+    return generated;
+  }
+
+  return null;
 }
 
 export function isRulesetsLoaded(): boolean {

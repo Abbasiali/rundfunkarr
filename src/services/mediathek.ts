@@ -5,6 +5,7 @@ import {
   getRulesetsForTopic,
   getRulesetsForTopicAndTvdbId,
   getAllTopics,
+  getOrGenerateRulesetForShow,
 } from "./rulesets";
 import { generateRssItems, convertItemsToRss, serializeRss, getEmptyRssResult } from "./newznab";
 import type {
@@ -406,8 +407,19 @@ async function applyRulesetFilters(
     }
     if (!foundRulesetForTvdbId) {
       console.log(
-        `[Mediathek] WARNING: No rulesets found for tvdbId ${tvdbData.id} (${tvdbData.name})`
+        `[Mediathek] No rulesets found for tvdbId ${tvdbData.id} (${tvdbData.name}), attempting auto-generation...`
       );
+
+      // Try to auto-generate a ruleset
+      const generatedRuleset = await getOrGenerateRulesetForShow(tvdbData.id, tvdbData);
+      if (generatedRuleset) {
+        console.log(
+          `[Mediathek] Auto-generated ruleset for topic "${generatedRuleset.topic}" -> TVDB ${tvdbData.id}`
+        );
+        foundRulesetForTvdbId = true;
+      } else {
+        console.log(`[Mediathek] Could not auto-generate ruleset for ${tvdbData.name}`);
+      }
     }
   }
 

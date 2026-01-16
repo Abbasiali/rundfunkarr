@@ -48,6 +48,23 @@ CREATE TABLE IF NOT EXISTS Config (
     value TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS GeneratedRuleset (
+    id TEXT PRIMARY KEY,
+    topic TEXT NOT NULL UNIQUE,
+    tvdbId INTEGER NOT NULL,
+    showName TEXT NOT NULL,
+    germanName TEXT,
+    matchingStrategy TEXT DEFAULT 'SeasonAndEpisodeNumber',
+    filters TEXT DEFAULT '[{"attribute":"duration","type":"GreaterThan","value":"15"}]',
+    episodeRegex TEXT DEFAULT '(?<=[E/])(\d{2})(?=\))',
+    seasonRegex TEXT DEFAULT '(?<=[S(])(\d{2})(?=[/E])',
+    titleRegexRules TEXT DEFAULT '[]',
+    createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS GeneratedRuleset_tvdbId_idx ON GeneratedRuleset(tvdbId);
+
 -- Prisma migrations table (for compatibility)
 CREATE TABLE IF NOT EXISTS _prisma_migrations (
     id TEXT PRIMARY KEY,
