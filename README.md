@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="public/logo.png" alt="MediathekArr Logo" width="128">
+</p>
+
 # MediathekArr
 
 [![GitHub Release](https://img.shields.io/github/v/release/mediathekarr/mediathekarr?logo=github&label=Release)](https://github.com/mediathekarr/mediathekarr/releases)
