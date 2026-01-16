@@ -25,14 +25,16 @@ RUN npx prisma generate
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
-# Move standalone files to fixed location (folder name varies based on project dir)
-# Using tar to properly handle hidden files like .next
+# Move standalone files to fixed location
+# Handle both cases: files directly in standalone/ OR in a subdirectory
 RUN mkdir -p /app/standalone-out && \
-    ls -la /app/.next/standalone/ && \
-    PROJ_DIR=$(ls -d /app/.next/standalone/*/) && \
-    echo "Found project dir: $PROJ_DIR" && \
-    ls -la "$PROJ_DIR" && \
-    cd "$PROJ_DIR" && tar cf - . | tar xf - -C /app/standalone-out/ && \
+    if [ -f /app/.next/standalone/server.js ]; then \
+      echo "Files directly in standalone/" && \
+      cd /app/.next/standalone && tar cf - . | tar xf - -C /app/standalone-out/; \
+    else \
+      echo "Files in subdirectory" && \
+      cd /app/.next/standalone/*/ && tar cf - . | tar xf - -C /app/standalone-out/; \
+    fi && \
     ls -la /app/standalone-out/
 
 # Stage 3: Runner
