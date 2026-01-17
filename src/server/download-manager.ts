@@ -4,7 +4,7 @@ import * as fs from "fs/promises";
 import { createWriteStream } from "fs";
 import * as path from "path";
 
-const MAX_CONCURRENT_DOWNLOADS = 2;
+const MAX_CONCURRENT_DOWNLOADS = 1;
 const DOWNLOAD_BASE_PATH =
   process.env.DOWNLOAD_FOLDER_PATH || path.join(process.cwd(), "downloads");
 const DOWNLOAD_TEMP_PATH =
