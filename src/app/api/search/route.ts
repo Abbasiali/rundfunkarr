@@ -13,6 +13,7 @@ export interface SearchResult {
   size: number;
   url_video: string;
   url_video_hd: string;
+  url_video_low: string;
   url_website: string;
 }
 
@@ -20,10 +21,16 @@ export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const q = searchParams.get("q");
   const limit = parseInt(searchParams.get("limit") || "50", 10);
+  const type = searchParams.get("type"); // "movie" for movies only
 
   if (!q || q.trim().length < 2) {
     return NextResponse.json({ results: [], error: "Query too short" });
   }
+
+  // Fetch more results than needed because accessibility filtering may remove many
+  // For movie search: at least 3x limit or 150
+  // For regular search: at least 3x limit to ensure enough results after filtering
+  const fetchSize = type === "movie" ? Math.max(limit * 3, 150) : Math.max(limit * 3, 100);
 
   try {
     const requestBody = {
@@ -32,7 +39,7 @@ export async function GET(request: NextRequest) {
       sortOrder: "desc",
       future: true,
       offset: 0,
-      size: limit,
+      size: fetchSize,
     };
 
     const response = await fetch(MEDIATHEK_API_URL, {
@@ -49,13 +56,15 @@ export async function GET(request: NextRequest) {
     const items = data.result?.results || [];
 
     // Filter out m3u8 streams and transform results
+    // For movies: only items >= 60 minutes (3600 seconds)
+    const minDuration = type === "movie" ? 3600 : 0;
+
     const results: SearchResult[] = items
       .filter(
-        (item: { url_video: string; title: string }) =>
-          !item.url_video.endsWith(".m3u8") &&
-          !item.title.includes("Audiodeskription") &&
-          !item.title.includes("Hörfassung")
+        (item: { url_video: string; duration: number }) =>
+          !item.url_video.endsWith(".m3u8") && item.duration >= minDuration
       )
+      .slice(0, limit)
       .map(
         (item: {
           channel: string;
@@ -67,6 +76,7 @@ export async function GET(request: NextRequest) {
           size: number;
           url_video: string;
           url_video_hd: string;
+          url_video_low: string;
           url_website: string;
         }) => ({
           id: `${item.channel}-${item.topic}-${item.title}-${item.filmlisteTimestamp}`,
@@ -79,6 +89,7 @@ export async function GET(request: NextRequest) {
           size: item.size,
           url_video: item.url_video,
           url_video_hd: item.url_video_hd || item.url_video,
+          url_video_low: item.url_video_low || "",
           url_website: item.url_website,
         })
       );
