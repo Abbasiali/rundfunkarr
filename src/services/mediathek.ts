@@ -904,15 +904,14 @@ export async function fetchMovieSearchResults(
     return (cached as { response: string }).response;
   }
 
-  // Search by German title first, then original title
+  // Search by German title and original title in parallel
   const searchTerms = [movieData.germanTitle];
   if (movieData.title !== movieData.germanTitle) {
     searchTerms.push(movieData.title);
   }
 
-  let allResults: ApiResultItem[] = [];
-
-  for (const searchTerm of searchTerms) {
+  // Helper function to fetch results for a single search term
+  async function fetchForTerm(searchTerm: string): Promise<ApiResultItem[]> {
     const apiCacheKey = `mediathekapi_movie_${searchTerm}`;
     let apiResponse: string;
     const cachedApi = mediathekCache.get(apiCacheKey);
@@ -935,16 +934,25 @@ export async function fetchMovieSearchResults(
         const parsed: MediathekApiResponse = JSON.parse(apiResponse);
         const results = parsed.result?.results || [];
         console.log(`[Mediathek] API returned ${results.length} results for "${searchTerm}"`);
-
-        // Add to all results, avoiding duplicates by URL
-        const existingUrls = new Set(allResults.map((r) => r.url_video));
-        for (const result of results) {
-          if (!existingUrls.has(result.url_video)) {
-            allResults.push(result);
-          }
-        }
+        return results;
       } catch {
         console.log(`[Mediathek] Failed to parse API response for movie search`);
+      }
+    }
+    return [];
+  }
+
+  // Fetch all search terms in parallel
+  const resultsPerTerm = await Promise.all(searchTerms.map(fetchForTerm));
+
+  // Merge results, avoiding duplicates by URL
+  const allResults: ApiResultItem[] = [];
+  const existingUrls = new Set<string>();
+  for (const results of resultsPerTerm) {
+    for (const result of results) {
+      if (!existingUrls.has(result.url_video)) {
+        existingUrls.add(result.url_video);
+        allResults.push(result);
       }
     }
   }
