@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { tvdbCache } from "@/lib/cache";
+import { fetchWithRetry } from "@/lib/fetch-retry";
 import { getSetting } from "@/lib/settings";
 import type { TvdbData, TvdbEpisode, TmdbMovieData } from "@/types";
 
@@ -124,7 +125,7 @@ async function fetchAndCacheSeriesData(tvdbId: number, apiKey: string): Promise<
     const headers = getAuthHeaders(apiKey);
     const findUrl = getApiUrl(`/find/${tvdbId}?external_source=tvdb_id`, apiKey);
 
-    const findResponse = await fetch(findUrl, { headers });
+    const findResponse = await fetchWithRetry(findUrl, { headers });
 
     if (!findResponse.ok) {
       console.error(`[TMDB] Find request failed: ${findResponse.status}`);
@@ -155,7 +156,7 @@ async function processShowData(
 
   const headers = getAuthHeaders(apiKey);
   const detailsUrl = getApiUrl(`/tv/${tmdbId}?append_to_response=translations`, apiKey);
-  const detailsResponse = await fetch(detailsUrl, { headers });
+  const detailsResponse = await fetchWithRetry(detailsUrl, { headers });
 
   if (!detailsResponse.ok) {
     console.error(`[TMDB] Details request failed: ${detailsResponse.status}`);
@@ -183,7 +184,7 @@ async function processShowData(
         `/tv/${tmdbId}/season/${season.season_number}?language=de-DE`,
         apiKey
       );
-      const seasonResponse = await fetch(seasonUrl, { headers });
+      const seasonResponse = await fetchWithRetry(seasonUrl, { headers });
 
       if (seasonResponse.ok) {
         const seasonData: TmdbSeasonDetails = await seasonResponse.json();
@@ -299,7 +300,7 @@ export async function getMovieInfoByTmdbId(tmdbId: number): Promise<TmdbMovieDat
 
     // First get the original movie details (for runtime and imdb_id)
     const detailsUrl = getApiUrl(`/movie/${tmdbId}`, apiKey);
-    const detailsResponse = await fetch(detailsUrl, { headers });
+    const detailsResponse = await fetchWithRetry(detailsUrl, { headers });
 
     if (!detailsResponse.ok) {
       console.error(`[TMDB] Movie details request failed: ${detailsResponse.status}`);
@@ -310,7 +311,7 @@ export async function getMovieInfoByTmdbId(tmdbId: number): Promise<TmdbMovieDat
 
     // Now get the German title
     const germanUrl = getApiUrl(`/movie/${tmdbId}?language=de-DE`, apiKey);
-    const germanResponse = await fetch(germanUrl, { headers });
+    const germanResponse = await fetchWithRetry(germanUrl, { headers });
 
     let germanTitle = details.title; // fallback to original
     if (germanResponse.ok) {
@@ -389,7 +390,7 @@ export async function searchMovieByTitle(
       searchUrl += `&year=${year}`;
     }
 
-    const searchResponse = await fetch(searchUrl, { headers });
+    const searchResponse = await fetchWithRetry(searchUrl, { headers });
 
     if (!searchResponse.ok) {
       console.error(`[TMDB] Movie search request failed: ${searchResponse.status}`);
@@ -450,7 +451,7 @@ export async function getMovieInfoByImdbId(imdbId: string): Promise<TmdbMovieDat
 
     // Use /find endpoint to resolve IMDB ID
     const findUrl = getApiUrl(`/find/${imdbId}?external_source=imdb_id`, apiKey);
-    const findResponse = await fetch(findUrl, { headers });
+    const findResponse = await fetchWithRetry(findUrl, { headers });
 
     if (!findResponse.ok) {
       console.error(`[TMDB] Find request failed: ${findResponse.status}`);
