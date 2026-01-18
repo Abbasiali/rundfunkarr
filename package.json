@@ -13,6 +13,9 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,json,css}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,json,css}\"",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "postinstall": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
@@ -56,6 +59,7 @@
     "@types/react-dom": "^19.0.2",
     "@types/uuid": "^10.0.0",
     "@types/xml2js": "^0.4.14",
+    "@vitest/coverage-v8": "^4.0.17",
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
     "autoprefixer": "^10.4.23",
@@ -68,7 +72,8 @@
     "prettier": "^3.8.0",
     "tailwindcss": "^4.1.18",
     "tsx": "^4.19.2",
-    "typescript": "^5.7.3"
+    "typescript": "^5.7.3",
+    "vitest": "^4.0.17"
   },
   "engines": {
     "node": ">=20.0.0"
