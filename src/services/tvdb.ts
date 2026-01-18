@@ -223,19 +223,28 @@ async function fetchAndCacheSeriesData(tvdbId: number): Promise<TvdbData | null>
         },
       });
 
-      // Insert episodes
-      for (const ep of series.episodes || []) {
-        await tx.tvdbEpisode.create({
-          data: {
-            id: ep.id,
-            seriesId: tvdbId,
-            name: ep.name || "",
-            aired: ep.aired ? new Date(ep.aired) : null,
-            runtime: ep.runtime || null,
-            seasonNumber: ep.seasonNumber,
-            episodeNumber: ep.number,
-          },
-        });
+      // Insert episodes in batch
+      const episodesData = (series.episodes || []).map(
+        (ep: {
+          id: number;
+          name?: string;
+          aired?: string;
+          runtime?: number;
+          seasonNumber: number;
+          number: number;
+        }) => ({
+          id: ep.id,
+          seriesId: tvdbId,
+          name: ep.name || "",
+          aired: ep.aired ? new Date(ep.aired) : null,
+          runtime: ep.runtime || null,
+          seasonNumber: ep.seasonNumber,
+          episodeNumber: ep.number,
+        })
+      );
+
+      if (episodesData.length > 0) {
+        await tx.tvdbEpisode.createMany({ data: episodesData });
       }
     });
 
