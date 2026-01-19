@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
 import { tvdbCache } from "@/lib/cache";
+import { fetchWithRetry } from "@/lib/fetch-retry";
 import { getSettings } from "@/lib/settings";
 import type { TvdbData, TvdbEpisode, TvdbAlias } from "@/types";
 
@@ -48,7 +49,7 @@ async function refreshToken(): Promise<string | null> {
   }
 
   try {
-    const response = await fetch(`${TVDB_API_URL}/login`, {
+    const response = await fetchWithRetry(`${TVDB_API_URL}/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ apikey: apiKey, pin: pin || undefined }),
@@ -136,7 +137,7 @@ async function fetchAndCacheSeriesData(tvdbId: number): Promise<TvdbData | null>
   }
 
   try {
-    const response = await fetch(
+    const response = await fetchWithRetry(
       `${TVDB_API_URL}/series/${tvdbId}/extended?meta=episodes&short=true`,
       {
         headers: {

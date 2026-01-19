@@ -1,4 +1,5 @@
 import { mediathekCache } from "@/lib/cache";
+import { fetchWithRetry } from "@/lib/fetch-retry";
 import { getSetting } from "@/lib/settings";
 import { getShowInfoByTvdbId } from "./shows";
 import {
@@ -80,7 +81,7 @@ async function fetchMediathekViewApiResponse(
   };
 
   try {
-    const response = await fetch(MEDIATHEK_API_URL, {
+    const response = await fetchWithRetry(MEDIATHEK_API_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(requestBody),
@@ -89,8 +90,9 @@ async function fetchMediathekViewApiResponse(
     if (response.ok) {
       return await response.text();
     }
+    console.error(`[Mediathek] API request failed with status ${response.status}`);
   } catch (error) {
-    console.error("Error fetching from Mediathek API:", error);
+    console.error("[Mediathek] Error fetching from API:", error);
   }
 
   return "";
