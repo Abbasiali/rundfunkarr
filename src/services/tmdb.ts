@@ -482,3 +482,76 @@ export async function getMovieInfoByImdbId(imdbId: string): Promise<TmdbMovieDat
     return null;
   }
 }
+
+// ============== MULTI-SEARCH (for category detection) ==============
+
+export interface TmdbMultiSearchResult {
+  mediaType: "movie" | "tv" | "unknown";
+  tmdbId: number | null;
+}
+
+interface TmdbMultiSearchResponse {
+  results: Array<{
+    id: number;
+    media_type: "movie" | "tv" | "person";
+    name?: string;
+    title?: string;
+  }>;
+}
+
+/**
+ * Search TMDB with multi-search to determine if a topic is a movie or TV show
+ * Returns the first matching result's media type
+ */
+export async function searchMulti(query: string): Promise<TmdbMultiSearchResult> {
+  if (!query) {
+    return { mediaType: "unknown", tmdbId: null };
+  }
+
+  const apiKey = await getApiKey();
+  if (!apiKey) {
+    console.error("[TMDB] No API key configured");
+    return { mediaType: "unknown", tmdbId: null };
+  }
+
+  try {
+    const headers = getAuthHeaders(apiKey);
+    const searchUrl = getApiUrl(
+      `/search/multi?query=${encodeURIComponent(query)}&language=de-DE`,
+      apiKey
+    );
+
+    const response = await fetchWithRetry(searchUrl, { headers });
+
+    if (!response.ok) {
+      console.error(`[TMDB] Multi-search request failed: ${response.status}`);
+      return { mediaType: "unknown", tmdbId: null };
+    }
+
+    const data: TmdbMultiSearchResponse = await response.json();
+
+    if (!data.results || data.results.length === 0) {
+      console.log(`[TMDB] No results for multi-search: "${query}"`);
+      return { mediaType: "unknown", tmdbId: null };
+    }
+
+    // Find first movie or TV result (skip person results)
+    const mediaResult = data.results.find((r) => r.media_type === "movie" || r.media_type === "tv");
+
+    if (!mediaResult) {
+      return { mediaType: "unknown", tmdbId: null };
+    }
+
+    console.log(
+      `[TMDB] Multi-search "${query}" -> ${mediaResult.media_type} (ID: ${mediaResult.id})`
+    );
+
+    return {
+      mediaType: mediaResult.media_type as "movie" | "tv",
+      tmdbId: mediaResult.id,
+    };
+  } catch (error) {
+    console.error("[TMDB] Error in multi-search:", error);
+    return { mediaType: "unknown", tmdbId: null };
+  }
+}

@@ -20,6 +20,7 @@ interface SearchResult {
   url_video: string;
   url_video_hd: string;
   url_website: string;
+  category?: "movie" | "tv" | "unknown";
 }
 
 export default function SearchPage() {
@@ -65,8 +66,11 @@ export default function SearchPage() {
   <!-- ${result.url_video_hd || result.url_video} -->
 </nzb>`;
 
+    // Use category for download folder: movie -> /movie, tv -> /tv
+    const cat = result.category === "movie" ? "movie" : result.category === "tv" ? "tv" : "default";
+
     try {
-      const res = await fetch("/api/download?mode=addfile&cat=default", {
+      const res = await fetch(`/api/download?mode=addfile&cat=${cat}`, {
         method: "POST",
         body: nzbContent,
       });
@@ -136,6 +140,12 @@ export default function SearchPage() {
                         {result.channel}
                       </Badge>
                       <span className="text-sm text-muted-foreground">{result.topic}</span>
+                      {result.category === "movie" && (
+                        <Badge className="text-xs bg-violet-600">Film</Badge>
+                      )}
+                      {result.category === "tv" && (
+                        <Badge className="text-xs bg-sky-600">Serie</Badge>
+                      )}
                       {result.title.includes("Gebärdensprache") && (
                         <Badge className="text-xs bg-purple-600">DGS</Badge>
                       )}
