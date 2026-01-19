@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { v4 as uuidv4 } from "uuid";
+import { randomUUID } from "crypto";
 import * as path from "path";
 
 export interface QueueItem {
@@ -58,7 +58,7 @@ export async function addToQueue(
 ): Promise<{ id: string }> {
   const download = await prisma.download.create({
     data: {
-      id: uuidv4(),
+      id: randomUUID(),
       title,
       url,
       category,
