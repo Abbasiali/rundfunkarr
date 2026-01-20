@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getCategoriesForTopics, CategoryType } from "@/services/category";
 
 const MEDIATHEK_API_URL = "https://mediathekviewweb.de/api/query";
 
@@ -15,6 +16,7 @@ export interface SearchResult {
   url_video_hd: string;
   url_video_low: string;
   url_website: string;
+  category?: CategoryType;
 }
 
 export async function GET(request: NextRequest) {
@@ -59,40 +61,50 @@ export async function GET(request: NextRequest) {
     // For movies: only items >= 60 minutes (3600 seconds)
     const minDuration = type === "movie" ? 3600 : 0;
 
-    const results: SearchResult[] = items
+    const filteredItems = items
       .filter(
         (item: { url_video: string; duration: number }) =>
           !item.url_video.endsWith(".m3u8") && item.duration >= minDuration
       )
-      .slice(0, limit)
-      .map(
-        (item: {
-          channel: string;
-          topic: string;
-          title: string;
-          description: string;
-          filmlisteTimestamp: number;
-          duration: number;
-          size: number;
-          url_video: string;
-          url_video_hd: string;
-          url_video_low: string;
-          url_website: string;
-        }) => ({
-          id: `${item.channel}-${item.topic}-${item.title}-${item.filmlisteTimestamp}`,
-          channel: item.channel,
-          topic: item.topic,
-          title: item.title,
-          description: item.description,
-          timestamp: item.filmlisteTimestamp,
-          duration: item.duration,
-          size: item.size,
-          url_video: item.url_video,
-          url_video_hd: item.url_video_hd || item.url_video,
-          url_video_low: item.url_video_low || "",
-          url_website: item.url_website,
-        })
-      );
+      .slice(0, limit);
+
+    // Collect unique topics for category lookup
+    const topics = [
+      ...new Set(filteredItems.map((item: { topic: string }) => item.topic)),
+    ] as string[];
+
+    // Get categories for all topics
+    const categoryMap = await getCategoriesForTopics(topics);
+
+    const results: SearchResult[] = filteredItems.map(
+      (item: {
+        channel: string;
+        topic: string;
+        title: string;
+        description: string;
+        filmlisteTimestamp: number;
+        duration: number;
+        size: number;
+        url_video: string;
+        url_video_hd: string;
+        url_video_low: string;
+        url_website: string;
+      }) => ({
+        id: `${item.channel}-${item.topic}-${item.title}-${item.filmlisteTimestamp}`,
+        channel: item.channel,
+        topic: item.topic,
+        title: item.title,
+        description: item.description,
+        timestamp: item.filmlisteTimestamp,
+        duration: item.duration,
+        size: item.size,
+        url_video: item.url_video,
+        url_video_hd: item.url_video_hd || item.url_video,
+        url_video_low: item.url_video_low || "",
+        url_website: item.url_website,
+        category: categoryMap.get(item.topic),
+      })
+    );
 
     return NextResponse.json({ results });
   } catch (error) {

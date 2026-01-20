@@ -73,3 +73,13 @@ model GeneratedRuleset {
 
   @@index([tvdbId])
 }
+
+model TopicCategory {
+  id        String   @id @default(cuid())
+  topic     String   @unique
+  category  String   // "movie" | "tv" | "unknown"
+  tmdbId    Int?
+  cachedAt  DateTime @default(now())
+
+  @@index([topic])
+}
