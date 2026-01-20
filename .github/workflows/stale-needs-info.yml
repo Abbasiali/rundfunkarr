@@ -1,0 +1,24 @@
+name: Close stale needs-info issues
+
+on:
+  schedule:
+    - cron: '0 9 * * *'  # Daily at 9:00 UTC
+  workflow_dispatch:      # Manual trigger
+
+jobs:
+  close-stale:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - uses: actions/stale@v9
+        with:
+          stale-issue-label: 'needs-info'
+          only-labels: 'needs-info'
+          days-before-stale: -1        # Already marked as stale
+          days-before-close: 14
+          close-issue-message: |
+            Dieses Issue wurde automatisch geschlossen, da wir 14 Tage
+            keine Antwort erhalten haben. Falls du noch Interesse hast,
+            antworte gerne - wir öffnen das Issue dann wieder.
+          exempt-issue-labels: 'pinned,in-progress'
